@@ -1,6 +1,7 @@
 import urllib.request
 import re
 import time
+import sys
 from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
@@ -44,7 +45,10 @@ _caps = DesiredCapabilities.PHANTOMJS
 _caps["phantomjs.page.settings.userAgent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36"
 _my_driver = webdriver.PhantomJS(service_args=['--proxy-type=none'])
 
-for i in range(1, 1000, 50):
+i_start = int(sys.argv[1])
+i_end = int(sys.argv[2])
+
+for i in range(i_start, i_end, 50):
     text = download_dynamic(url_base + str(i), 10)
     regex = re.compile(r"javascript:melon\.link\.goSongDetail\('(\d+)'\)")
     nums = regex.findall(text)
