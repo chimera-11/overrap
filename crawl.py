@@ -34,10 +34,11 @@ def querySong(id, myfile):
         return False
     lyrics = lyrics_list[0]
     regex = re.compile(r'(.+?)<[Bb][Rr]>')
-    lines = regex.findall(lyrics)    
+    lines = regex.findall(lyrics)
     #myfile.write(id + '\n')
+    regex_backup = re.compile(re.escape('<br>'), re.IGNORECASE)
     for line in lines:
-        myfile.write(line + '\n')
+        myfile.write(regex_backup.sub('', line) + '\n')
     myfile.write('\n')
     return True
 
