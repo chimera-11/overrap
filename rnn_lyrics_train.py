@@ -46,7 +46,9 @@ lyrics_dataset = LyricsDataset(path=data_path, wordset=wordset, seq_len_default=
 if is_test:
     n_epochs = 1
 
-with tf.Session() as sess:
+config = tf.ConfigProto(device_count = {'GPU': 0})
+with tf.Session(config=config) as sess:
+#with tf.Session() as sess:
     #file_writer = tf.summary.FileWriter('..\\tensorflow-logs', sess.graph)
     #merged = tf.summary.merge_all()
 
@@ -62,7 +64,7 @@ with tf.Session() as sess:
     while lyrics_dataset.counter < n_epochs:
         total_loss = 0
         i = 0
-        while lyrics_dataset.counter < n_epochs and i < 400:
+        while lyrics_dataset.counter < n_epochs and i < 100:
             i += 1
             X_batch, y_batch, seq_len_batch = lyrics_dataset.next_batch(batch_size)
             X_batch = numpy.reshape(X_batch, (-1, n_steps, n_inputs))

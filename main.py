@@ -9,8 +9,8 @@ def remove_word_type_suffix(word):
     return word.rsplit('/', 1)[0]
 
 rw2v = RapWord2Vec()
-chargen = CharGenRNN('crawl_hiphop')
-#chargen = CharGenNgram('corpus2\\output_decomp_100000.txt', 6)
+#chargen = CharGenRNN('crawl_hiphop')
+chargen = CharGenNgram('corpus2\\output_decomp_100000.txt', 5)
 
 def run(a, b):
     a = remove_word_type_suffix(a)
