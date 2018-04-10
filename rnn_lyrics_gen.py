@@ -38,6 +38,7 @@ class RNNLyricsGen:
 
             output_str = hangul_decomp.process_data(start_str)
             output_count_target = len(start_str) + append_count
+            return_str = ''
             seq_len_default = 30
 
             config = tf.ConfigProto(
@@ -67,8 +68,15 @@ class RNNLyricsGen:
                         option = "jongseong"
                     else:
                         option = "not_hangul"
-                    output_str += wordset.sample_context_aware(softmax(c), option)
-        return hangul_comp.process_data(output_str)
+                    c_sample = wordset.sample_context_aware(softmax(c), option)
+                    output_str += c_sample
+                    return_str += c_sample
+                    if hangul.is_jongseong(output_str[-1]) and hangul.is_complete(output_str):
+                       c_new = hangul_comp.process_data(output_str[-3:])
+                       if not hangul.in_wanseong(c_new)
+                           output_str = output_str[:-3]
+                           return_str = return_str[:-3]
+        return hangul_comp.process_data(return_str)
 
 if __name__  == '__main__':
     model_path = sys.argv[1]

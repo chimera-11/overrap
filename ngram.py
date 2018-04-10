@@ -45,7 +45,7 @@ class Ngram:
             c = self.generate_letter(history, order)
             history = history[-order:] + c
             output_str += c
-            print(hangul_comp.process_data(output_str))
+            #print(hangul_comp.process_data(output_str))
         return output_str
 
 if __name__ == '__main__':
