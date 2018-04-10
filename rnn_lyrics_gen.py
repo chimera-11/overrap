@@ -73,7 +73,7 @@ class RNNLyricsGen:
                     return_str += c_sample
                     if hangul.is_jongseong(output_str[-1]) and hangul.is_complete(output_str):
                        c_new = hangul_comp.process_data(output_str[-3:])
-                       if not hangul.in_wanseong(c_new)
+                       if not hangul.in_wanseong(c_new):
                            output_str = output_str[:-3]
                            return_str = return_str[:-3]
         return hangul_comp.process_data(return_str)

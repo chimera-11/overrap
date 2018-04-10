@@ -37,7 +37,8 @@ while True:
         try:
             out_str = run(a, b)
             break
-        except:
+        except Exception as e:
+            print(e)
             tries += 1
     if tries < 5:
         print("keywords: " + a + ", " + b)
