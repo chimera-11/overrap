@@ -15,8 +15,14 @@ def decompose_hangul(c):
     choseong = c
     return choseongs[choseong] + joongseongs[joongseong] + jongseongs[jongseong]
 
-def is_leading_hangul(c):
+def is_choseong(c):
     return c in choseongs
+def is_joongseong(c):
+    return c in joongseongs
+def is_jongseong(c):
+    return c in jongseongs
+def is_hangul_phoneme(c):
+    return c in choseongs or c in joongseongs or c in jongseongs
 
 def find_element_in_list(element, list_element):
     try:
