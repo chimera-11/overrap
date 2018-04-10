@@ -23,6 +23,11 @@ def is_jongseong(c):
     return c in jongseongs
 def is_hangul_phoneme(c):
     return c in choseongs or c in joongseongs or c in jongseongs
+def is_complete(input_str):
+    if len(input_str) is 0:
+        return True
+    c = input_str[-1]
+    return not is_choseong(c) and not is_joongseong(c)
 
 def find_element_in_list(element, list_element):
     try:

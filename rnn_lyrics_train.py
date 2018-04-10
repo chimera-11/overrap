@@ -42,7 +42,7 @@ batch_size = 150
 
 model_path = sys.argv[1]
 data_path = sys.argv[2] if is_test else sys.argv[1]
-lyrics_dataset = LyricsDataset(path=data_path, wordset=wordset, seq_len_default=n_steps, seq_len_min=10)
+lyrics_dataset = LyricsDataset(path=data_path, wordset=wordset, seq_len_default=n_steps, seq_len_min=5)
 if is_test:
     n_epochs = 1
 

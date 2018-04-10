@@ -43,10 +43,10 @@ class Wordset:
             if self.wordset[i] in subset:
                 one_hot[i] = 1
         new_weights = weights * one_hot
-        new_weights /= np.sum(new_weights)
         return self.sample_from(new_weights)
     def sample_from(self, weights):
+        new_weights = weights / np.sum(weights)
         #return self.wordset[np.argmax(weights)]
-        return np.random.choice(self.wordset, p=weights)
+        return np.random.choice(self.wordset, p=new_weights)
     def char_to_index(self, c):
         return self.wordset.index(c)
