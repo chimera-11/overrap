@@ -71,11 +71,13 @@ class RNNLyricsGen:
                     c_sample = wordset.sample_context_aware(softmax(c), option)
                     output_str += c_sample
                     return_str += c_sample
+                    """
                     if hangul.is_jongseong(output_str[-1]) and hangul.is_complete(output_str):
-                       c_new = hangul_comp.process_data(output_str[-3:])
-                       if not hangul.in_wanseong(c_new):
-                           output_str = output_str[:-3]
-                           return_str = return_str[:-3]
+                        c_new = hangul_comp.process_data(output_str[-3:])
+                        if not hangul.in_wanseong(c_new):
+                            output_str = output_str[:-3]
+                            return_str = return_str[:-3]
+                    """
         return hangul_comp.process_data(return_str)
 
 if __name__  == '__main__':

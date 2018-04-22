@@ -10,14 +10,15 @@ def remove_word_type_suffix(word):
 
 rw2v = RapWord2Vec()
 #chargen = CharGenRNN('crawl_hiphop')
-chargen = CharGenNgram('corpus2\\output_decomp_100000.txt', 5)
+#chargen = CharGenNgram('corpus2\\output_decomp_100000.txt', 5)
+chargen = CharGenNgram('corpus2\\output_decomp_403340.txt', 6)
 
 def run(a, b):
     a = remove_word_type_suffix(a)
     b = remove_word_type_suffix(b)
     out_str = ''
     out_str += a + chargen.generate(a, 5 + random.randrange(-1, 2))
-    out_str += ' ' + b + chargen.generate(b, 5 + random.randrange(-1, 2))
+    out_str += ' ' + b + chargen.generate(out_str + ' ' + b, 5 + random.randrange(-1, 2))
     out_str = out_str.replace('\n', ' ').replace('  ', ' ')
     out_str = hangul_comp.process_data(out_str)
     return out_str
