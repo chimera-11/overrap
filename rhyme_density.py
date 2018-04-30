@@ -1,14 +1,10 @@
 import hangul
 import numpy as np
 
-# a, b: 각 모음의 출현 빈도수
-def similarity_score(a, b):
-    #a = min(a, 3)
-    #b = min(b, 3)
-    return a * b
+# implements rhyme scoring method introduced in (Hirjee, 2009)
 
-# 모음 20가지에 대해 라임 유사도 분석 실시
-# 반환값: 20 x 20 upper triangular matrix
+# 모음 21가지에 대해 라임 유사도 분석 실시
+# 반환값: 21 x 21 upper triangular matrix
 def analyze(input_str):
     vowel_count = len(hangul.joongseongs)
     rhyme_counts = np.zeros(vowel_count)
@@ -21,7 +17,7 @@ def analyze(input_str):
     counts = np.zeros((vowel_count, vowel_count))
     for i in range(vowel_count):
         for j in range(i, vowel_count):
-            counts[i][j] = similarity_score(rhyme_counts[i], rhyme_counts[j])
+            counts[i][j] = rhyme_counts[i] * rhyme_counts[j]
     total_count = vowel_count * (vowel_count + 1) / 2
     totals = np.ones((vowel_count, vowel_count)) * total_count
     return counts, totals
