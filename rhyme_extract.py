@@ -3,9 +3,9 @@ import os.path
 
 # rhyme_extract.py
 # run as:
-#     python rhyme_extract.py <input_file> <output_file>
+#     python rhyme_extract.py <input_file>
 # for example:
-#     python rhyme_extract.py crawl_1.txt crawl_1_rhyme.txt
+#     python rhyme_extract.py crawl_1.txt
 
 if len(sys.argv) < 2:
     raise Exception('Supply input file path')
