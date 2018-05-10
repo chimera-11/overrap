@@ -1,7 +1,7 @@
 import glob
 
 lines = []
-for filename in glob.glob('test*.txt'):
+for filename in glob.glob('*.txt'):
     with open(filename, 'r', encoding='utf8') as myfile:
         line = myfile.readline()
         while line:

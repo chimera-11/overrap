@@ -19,6 +19,14 @@ def decompose_hangul(c):
     c //= 21
     choseong = c
     return choseongs[choseong] + joongseongs[joongseong] + jongseongs[jongseong]
+def num_vowels():
+    return len(joongseongs)
+def get_vowel_index(c):
+    # 한글유니코드값 = 0xAC00 + ( (초성순서 * 21) + 중성순서 ) * 28 + 종성순서
+    c = ord(c) - 0xAC00
+    c //= 28
+    joongseong = c % 21
+    return joongseong
 
 def is_choseong(c):
     return c in choseongs
@@ -60,3 +68,22 @@ def try_compose(choseong, joongseong, jongseong):
     if -1 in [choseong_index, joongseong_index, jongseong_index]:
         return [False, choseong + joongseong + jongseong]
     return [True, compose_from_index(choseong_index, joongseong_index, jongseong_index)]
+
+def convert_to_vowel_indices(input_string):
+    vowels = []
+    for c in input_string:
+        if not is_hangul_char(c):
+            return False, None
+        vowel_index = get_vowel_index(c)
+        vowels.append(vowel_index)
+    return True, vowels
+
+def convert_to_vowel_indices_nofail(input_string):
+    vowels = []
+    for c in input_string:
+        if is_hangul_char(c):
+            vowel_index = get_vowel_index(c)
+            vowels.append(vowel_index)
+        else:
+            vowels.append(-1)
+    return vowels

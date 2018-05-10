@@ -49,8 +49,9 @@ def run():
     if is_test:
         n_epochs = 1
 
-    config = tf.ConfigProto(device_count = {'GPU': 0})
-    with tf.Session(config=config) as sess:
+    #config = tf.ConfigProto(device_count = {'GPU': 0})
+    #with tf.Session(config=config) as sess:
+    with tf.Session() as sess:
     #with tf.Session() as sess:
         #file_writer = tf.summary.FileWriter('..\\tensorflow-logs', sess.graph)
         #merged = tf.summary.merge_all()
