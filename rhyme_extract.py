@@ -41,10 +41,10 @@ with open(input_file_path, 'r', encoding='utf8') as fin:
             line = line.replace('\r', '').replace('\n', '')
             print('[%s]' % line)
             while True:
-                if prev_choice == '0':
-                    choice = input('save=1, skip=0, twoline=2, suspend=s: ')
-                else:
+                if prev_choice == 'x':
                     choice = input('save=1, skip=0, suspend=s: ')
+                else:
+                    choice = input('save=1, skip=0, twoline=2, suspend=s: ')
                 if choice == '1':
                     fout.write(line + '\r\n')
                     print('saved')
@@ -54,7 +54,7 @@ with open(input_file_path, 'r', encoding='utf8') as fin:
                     print('skipped')
                     prev_choice = choice
                     break
-                elif prev_choice == '0' and choice == '2':
+                elif prev_choice != 'x' and choice == '2':
                     fout.write(prev_line + ' ' + line + '\r\n')
                     print('twoline saved')
                     prev_choice = choice
