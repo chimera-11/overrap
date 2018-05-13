@@ -47,12 +47,12 @@ for _ in range(num_lines):
     a = remove_word_type_suffix(a)
     b = remove_word_type_suffix(b)
     sampler.set_prime_text(a)
-    a_len = random.randrange(4, 7)
+    a_len = random.randrange(5, 8)
     s = sampler.sample(a_len)
     print(s)
-    line = s + b
+    line = s + ' ' + b
     sampler.set_prime_text(line)
-    b_len = random.randrange(4, 7)
+    b_len = len(line) + random.randrange(5, 8)
     line = sampler.sample(b_len)
     line = line.replace('\n', ' ').replace('  ', ' ').strip()
     lines.append([a, b, line])
