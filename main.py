@@ -1,18 +1,24 @@
-from rap_word2vec import RapWord2Vec
+from rap_word2vec_180514 import RapWord2Vec180514
 from char_gen_base import CharGenBase
 from char_gen_ngram import CharGenNgram
 from char_gen_rnn import CharGenRNN
+from char_gen_rnn import CharGenRNN180514
 from char_gen_rnn_yangseo import CharGenRNNYangseo
 import hangul_comp
 import random
 
+# removes type suffix concatenated by text processor
+# Ex> '찬란하다/Verb' --> '찬란하다'
 def remove_word_type_suffix(word):
-    return word.rsplit('/', 1)[0]
+    word = str(word)
+    if '/' in word:
+        return word.rsplit('/', 1)[0]
+    return word
 
-rw2v = RapWord2Vec()
+rw2v = RapWord2Vec180514()
 #chargen = CharGenRNN('crawl_hiphop')
-#chargen = CharGenRNN('D:\\Dev\\School\\tmp')
-#chargen = CharGenRNN('D:\\Dev\\School\\crawl_dance')
+#chargen = CharGenRNN('..\\tmp')
+#chargen = CharGenRNN180514('..\\crawl_dance')
 #chargen = CharGenNgram('corpus2\\output_decomp_100000.txt', 5)
 #chargen = CharGenNgram('corpus2\\output_decomp_403340.txt', 6)
 chargen = CharGenRNNYangseo()
@@ -40,7 +46,7 @@ while True:
     elif cmd == 'r':
         pass
     else:
-        a, b = rw2v.generate_words(' ', ' ')
+        a, b = rw2v.sample_pair()
     tries = 0
     while tries < 5:
         try:

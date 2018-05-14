@@ -18,13 +18,10 @@ import hangul
 import hangul_comp
 import hangul_decomp
 import numpy as np
+import mathutils
 import os
 from wordset import Wordset
 
-def softmax(x):
-    """Compute softmax values for each sets of scores in x."""
-    e_x = np.exp(x - np.max(x))
-    return e_x / e_x.sum(axis=0)
 
 class RNNLyricsGen180514:
     def __init__(self, model_path):
@@ -95,8 +92,8 @@ class RNNLyricsGen180514:
                         option = "jongseong"
                     else:
                         option = "not_hangul"
-                    c_sample = wordset.sample_context_aware(softmax(c), option)
-                    #c_sample = wordset.sample_from(softmax(c))
+                    c_sample = wordset.sample_context_aware(mathutils.softmax(c), option)
+                    #c_sample = wordset.sample_from(mathutils.softmax(c))
                     output_str += c_sample
                     return_str += c_sample
                     """

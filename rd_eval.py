@@ -71,14 +71,14 @@ class RhymeDensityEval:
         #    note that there can be multiple evaluation criteria
         #    like vowel rhyme, consonant rhyme, character rhyme, etc
         total_score = 0
+        total_score += self.eval_between_line_endings(line1, line2, verbose=verbose)
         total_score += self.eval_between_vowel_rhyme(line1, line2, verbose=verbose)
         return total_score
-    def eval_between_vowel_rhyme(self, line1, line2, verbose=False):
+    def eval_between_line_endings(self, line1, line2, verbose=False):
         line1 = line1.replace(' ', '')
         line2 = line2.replace(' ', '')
         if len(line1) < 3 or len(line2) < 3:
             return 0    # too short for processing
-        total_score = 0
         # 0. 전처리 작업
         # 공백으로 연결된 것은 추가하되, 그렇지 않은 것은 제거
         vowels1 = hangul.convert_to_vowel_indices_nofail(line1)
@@ -97,10 +97,24 @@ class RhymeDensityEval:
         score_endvowel /= 120
         if verbose:
             print('score_endvowel = %f' % score_endvowel)
-        total_score += score_endvowel
+        return score_endvowel
+    # graph_onechar: True이면 1모음 단위 매칭, False이면 2모음 단위 매칭
+    def eval_between_vowel_rhyme(self, phrase1, phrase2, verbose=False, graph_onechar=False):
+        total_score = 0
+        phrase1 = phrase1.replace(' ', '')
+        phrase2 = phrase2.replace(' ', '')
+        if len(phrase1) == 0 or len(phrase2) == 0:
+            return 0    # too short for processing
+        # 0. 전처리 작업
+        # 공백으로 연결된 것은 추가하되, 그렇지 않은 것은 제거
+        vowels1 = hangul.convert_to_vowel_indices_nofail(phrase1)
+        vowels2 = hangul.convert_to_vowel_indices_nofail(phrase2)
         # 2. 유사 모음군 추출 (길이 2)
         # 유사도에 따라 graph를 구축하여 connected component별로 점수를 매기는 방식
-        V, vertices, adj = self.build_graph_between(line1, line2, vowels1, vowels2)
+        if graph_onechar:
+            V, vertices, adj = self.build_graph_between_charlevel(phrase1, phrase2, vowels1, vowels2)
+        else:
+            V, vertices, adj = self.build_graph_between(phrase1, phrase2, vowels1, vowels2)
         #V, vertices, adj = self.build_graph(vowels1 + vowels2)
         len_penalty = huber_loss(len(vowels1)) * huber_loss(len(vowels1))
         score_graph = self.eval_graph(V, vertices, adj, verbose=verbose) / len_penalty
@@ -133,6 +147,20 @@ class RhymeDensityEval:
                 if line[ii:ii+2] == line[jj:jj+2]: # penalize mere repetition
                     edge_weight /= 4
                 adj[i][j] = edge_weight
+        return V, vertices, adj
+    def build_graph_between_charlevel(self, line1, line2, vowels1, vowels2):
+        vertices = []
+        concat = vowels1 + vowels2
+        for i in range(len(concat)):
+            vertices.append([i, concat[i]])
+        V = len(vertices)
+        adj = np.zeros([V, V])
+        for i in range(0, len(vowels1)):
+            for j in range(len(vowels1), V):
+                sim = self.vowel_simil(vertices[i][1], vertices[j][1])
+                if sim > 0:
+                    edge_weight = sim
+                    adj[i][j] = adj[j][i] = edge_weight
         return V, vertices, adj
     def build_graph_between(self, line1, line2, vowels1, vowels2):
         vertices = []
@@ -168,7 +196,7 @@ class RhymeDensityEval:
         def dfs(i):
             if visited[i] != 0:
                 return 0, 0
-            if verbose:
+            if verbose and len(vertices[i]) >= 3:
                 print('enter %d %s %s' % (i, hangul.joongseongs[vertices[i][1]], hangul.joongseongs[vertices[i][2]]))
             visited[i] = 1
             weight_sum = 0
@@ -180,7 +208,7 @@ class RhymeDensityEval:
                     node_count += _n
                 weight_sum += adj[i][j]
             visited[i] = 2
-            if verbose:
+            if verbose and len(vertices[i]) >= 3:
                 print('leave %d %s %s' % (i, hangul.joongseongs[vertices[i][1]], hangul.joongseongs[vertices[i][2]]))
                 print('  with weight_sum = %.3f, node_count = %d' % (weight_sum, node_count))
             return weight_sum, node_count
