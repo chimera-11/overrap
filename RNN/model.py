@@ -86,7 +86,8 @@ class Model():
         tf.summary.histogram('loss', loss)
         tf.summary.scalar('train_loss', self.cost)
 
-    def sample(self, sess, chars, vocab, num=200, prime='The ', sampling_type=1):
+    # return_prefix_prime: if True, the return string is prefixed with the prime string
+    def sample(self, sess, chars, vocab, num=200, prime='The ', sampling_type=1, return_prefix_prime=True):
         state = sess.run(self.cell.zero_state(1, tf.float32))
         for char in prime[:-1]:
             x = np.zeros((1, 1))
@@ -99,7 +100,7 @@ class Model():
             s = np.sum(weights)
             return(int(np.searchsorted(t, np.random.rand(1)*s)))
 
-        ret = prime
+        ret = prime if return_prefix_prime else ''
         char = prime[-1]
         for n in range(num):
             x = np.zeros((1, 1))

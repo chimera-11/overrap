@@ -15,10 +15,10 @@ from RNN.model import Model
 from six import text_type
 
 class Sampler:
-    def __init__(self):
+    def __init__(self, model_path='RNN\\save_balad'):
         parser = argparse.ArgumentParser(
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        parser.add_argument('--save_dir', type=str, default='RNN\save_balad',
+        parser.add_argument('--save_dir', type=str, default=model_path,
                             help='model directory to store checkpointed models')
         parser.add_argument('-n', type=int, default=20,
                             help='number of characters to sample')
@@ -68,7 +68,7 @@ class Sampler:
     def get_prime_text(self):
         return self._args.prime
 
-    def sample(self, str_len):
+    def sample(self, str_len, return_prefix_prime=True):
         tf.reset_default_graph()
         args = self._args
         with open(os.path.join(args.save_dir, 'config.pkl'), 'rb') as f:
@@ -76,14 +76,18 @@ class Sampler:
         with open(os.path.join(args.save_dir, 'chars_vocab.pkl'), 'rb') as f:
             chars, vocab = cPickle.load(f)
         model = Model(saved_args, training=False)
-        with tf.Session() as sess:
+        config = tf.ConfigProto(
+                    device_count = {'GPU': 0} # don't use GPU for generation
+                )
+        with tf.Session(config=config) as sess:
             result = ''
             tf.global_variables_initializer().run()
             saver = tf.train.Saver(tf.global_variables())
             ckpt = tf.train.get_checkpoint_state(args.save_dir)
             if ckpt and ckpt.model_checkpoint_path:
                 saver.restore(sess, ckpt.model_checkpoint_path)
-                string = model.sample(sess, chars, vocab, args.n, args.prime, args.sample)
+                string = model.sample(sess, chars, vocab, args.n, \
+                    args.prime, args.sample, return_prefix_prime=return_prefix_prime)
                 for x in string :
                     if (x == ' ') :
                         if (len(result) > str_len) :

@@ -43,19 +43,25 @@ def remove_word_type_suffix(word):
 print('asd')
 lines = []
 for _ in range(num_lines):
-    a, b = rw2v.generate_words(' ', ' ')
-    a = remove_word_type_suffix(a)
-    b = remove_word_type_suffix(b)
-    sampler.set_prime_text(a)
-    a_len = random.randrange(5, 8)
-    s = sampler.sample(a_len)
-    print(s)
-    line = s + ' ' + b
-    sampler.set_prime_text(line)
-    b_len = len(line) + random.randrange(5, 8)
-    line = sampler.sample(b_len)
-    line = line.replace('\n', ' ').replace('  ', ' ').strip()
-    lines.append([a, b, line])
+    retry = True
+    while retry:
+        try:
+            a, b = rw2v.generate_words(' ', ' ')
+            a = remove_word_type_suffix(a)
+            b = remove_word_type_suffix(b)
+            sampler.set_prime_text(a)
+            a_len = random.randrange(5, 8)
+            s = sampler.sample(a_len)
+            print(s)
+            line = s + ' ' + b
+            sampler.set_prime_text(line)
+            b_len = len(line) + random.randrange(5, 8)
+            line = sampler.sample(b_len)
+            line = line.replace('\n', ' ').replace('  ', ' ').strip()
+            lines.append([a, b, line])
+            retry = False
+        except:
+            retry = True
 
 for line in lines:
     print(line)
