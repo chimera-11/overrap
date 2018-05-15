@@ -6,11 +6,11 @@ from rnn_lyrics_gen_180514_constraint import RNNLyricsGen180514Constraint
 from rd_eval import RhymeDensityEval
 
 N = 4
-T = 1
+T = 5
 w2v = RapWord2Vec180514()
 lg = LineGen()
 r = RhymeDensityEval()
-fixer = RNNLyricsGen180514Constraint('..\\crawl_dance')
+fixer = RNNLyricsGen180514Constraint('crawl_dance_180514')
 
 # Fixes target string to have the same
 # ending rhyme with template, using
@@ -29,9 +29,10 @@ def fix_line_ending(template, target):
     def try_update(target):
         nonlocal target_fixed_str
         nonlocal target_prob
-        for cst_len in [5, 6, 7]:
+        for cst_len in [6, 7, 8]:
             char_constraint = [-1] * cst_len
-            char_constraint[cst_len - 2] = vindex
+            char_constraint[-3] = vindex
+            char_constraint[-1] = hangul.phoneme_to_index(' ')
             fixed_str, prob = fixer.run(target, char_constraint, pruning_prob=target_prob)
             if prob > target_prob:
                 target_fixed_str, target_prob = fixed_str, prob
