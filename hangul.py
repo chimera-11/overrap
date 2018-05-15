@@ -6,6 +6,7 @@ wanseong_2350 = list("가각간갇갈갉갊감갑값갓갔강갖갗같갚갛개�
 choseongs = ['\u1100', '\u1101', '\u1102', '\u1103', '\u1104', '\u1105', '\u1106', '\u1107', '\u1108', '\u1109', '\u110A', '\u110B', '\u110C', '\u110D', '\u110E', '\u110F', '\u1110', '\u1111', '\u1112']
 joongseongs = [ "ㅏ", "ㅐ", "ㅑ", "ㅒ", "ㅓ", "ㅔ", "ㅕ", "ㅖ", "ㅗ", "ㅘ", "ㅙ", "ㅚ", "ㅛ", "ㅜ", "ㅝ", "ㅞ", "ㅟ", "ㅠ", "ㅡ", "ㅢ", "ㅣ"]
 jongseongs = ['+', '\u3131', '\u3132', '\u3133', '\u3134', '\u3135', '\u3136', '\u3137', '\u3139', '\u313A', '\u313B', '\u313C', '\u313D', '\u313E', '\u313F', '\u3140', '\u3141', '\u3142', '\u3144', '\u3145', '\u3146', '\u3147', '\u3148', '\u314A', '\u314B', '\u314C', '\u314D', '\u314E']
+default_wordset = choseongs + joongseongs + jongseongs + [' ', '\n']
 
 def in_wanseong(c):
     return c in wanseong_2350
@@ -102,3 +103,9 @@ def adjacency_possible(c1, c2):
     if is_joongseong(c1):
         return is_jongseong(c2)
     return not is_joongseong(c2) and not is_jongseong(c2)
+
+def phoneme_to_index(c):
+    for i in range(len(default_wordset)):
+        if default_wordset[i] == c:
+            return i
+    return -1

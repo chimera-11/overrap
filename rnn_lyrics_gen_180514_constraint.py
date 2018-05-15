@@ -18,6 +18,10 @@
 #     As the algorithm runs brute force (beam search) using
 #     the softmax probabilities, it is recommended to keep the
 #     length of the character constraint below 7.
+# Warning:
+#     Command-line specification of character constraint is
+#     yet to be implemented! (If you wish to test, please
+#     refer to the code at the bottom of this file)
 
 import tensorflow as tf
 import sys
@@ -35,7 +39,10 @@ class RNNLyricsGen180514Constraint:
         self.model_path = model_path
         wordset = hangul.choseongs + hangul.joongseongs + hangul.jongseongs + [' ', '\n']
         self.wordset = Wordset(wordset)
-    def run(self, start_str, char_constraint):
+    # pruning_prob: 평균 확률이 더 좋은 값이 알려져 있을때,
+    #  그 확률보다 잘 나오지 않을 것은 검색하지 않으려면 지정
+    #  (run 함수의 반환값처럼 조화평균이어야 함)
+    def run(self, start_str, char_constraint, pruning_prob=0):
         with tf.Graph().as_default():       # use local graph, prevent parameter duplicate issue
             model_path = self.model_path
             wordset = self.wordset
@@ -72,6 +79,7 @@ class RNNLyricsGen180514Constraint:
 
             self.best_seq = []
             self.best_prob = 0
+            self.pruning_prob = np.power(pruning_prob, len(char_constraint)) if pruning_prob > 0 else 0
 
             config = tf.ConfigProto(
                     device_count = {'GPU': 0} # don't use GPU for generation
@@ -85,7 +93,7 @@ class RNNLyricsGen180514Constraint:
                     raise EnvironmentError("Couldn't fild the trained data file 'model-180514.ckpt' in the target directory")
                 saver.restore(sess, saver_file)
                 def dfs(depth, seq, prob, prev_state):
-                    if prob < self.best_prob:
+                    if prob < self.best_prob or prob < self.pruning_prob:
                         return # early pruning
                     if depth == len(char_constraint):
                         if prob > self.best_prob:
@@ -122,19 +130,22 @@ class RNNLyricsGen180514Constraint:
                         if hangul.adjacency_possible(seq[-1], fixed_char):
                             dfs(depth + 1, seq + fixed_char, prob * c[fixed_char_idx], state)
                 dfs(0, start_str_decomp, 1, sess.run(cell.zero_state(1, tf.float32)))
-                if self.best_prob == 0:
-                    self.best_seq = 'Failed to generate'
-                else:
-                    print(self.best_prob)
+                if __name__ == '__main__':
+                    if self.best_prob == 0:
+                        self.best_seq = 'Failed to generate'
+                    else:
+                        print(self.best_prob)
                 return_str = self.best_seq
-        return hangul_comp.process_data(return_str)
+        return hangul_comp.process_data(return_str), np.power(self.best_prob, 1 / len(char_constraint))
 
 if __name__  == '__main__':
     model_path = sys.argv[1]
     start_str = sys.argv[2]
-    append_str_len = int(sys.argv[3])
     rnn = RNNLyricsGen180514Constraint(model_path)
-    char_constraint = [-1] * 4
+    char_constraint = [-1] * 9
     char_constraint[-2] = rnn.wordset.char_to_index(hangul.joongseongs[hangul.get_vowel_index('에')])
-    output_str = rnn.run(start_str, char_constraint)
+    output_str, avg_prob = rnn.run(start_str, char_constraint)
+    print(list(output_str))
+    output_str = output_str.replace('\n', ' ').replace('  ', ' ')
     print(output_str)
+    print(avg_prob)
