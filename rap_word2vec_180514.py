@@ -37,15 +37,20 @@ class RapWord2Vec180514:
         for x in self.model.wv.vocab:
             self.vocab.append(x)
     # utility functions
-    def is_vocab(self, word, model):
+    def is_vocab(self, word):
         return word in self.vocab
     def random_vocab(self):
         return random.choice(self.vocab)
     # external interface functions
-    def sample_pair(self):
-        w1 = self.random_vocab()
+    def sample_pair(self, w1=None):
+        if w1 != None:
+            w1 = str(w1)
+            if not self.is_vocab(w1):
+                raise RuntimeError('Word %s is not in model dictionary' % w1)
+        else:
+            w1 = self.random_vocab()
         # bake up candidates
-        w2_cands = [x[0] for x in self.model.most_similar(w1)]
+        w2_cands = [x[0] for x in self.model.similar_by_word(w1, topn=self.scope)]
         meaning_scores = []
         rhyme_scores = []
         # score the candidates

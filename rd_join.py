@@ -17,18 +17,31 @@ import sys
 
 import rd_eval
 
-VMAX = 15
+VMAX = 20
 
 # read the file
-filename = sys.argv[1]
-with open(filename, mode='r', encoding='utf-8-sig') as fp:
-    lines = str(fp.read()).split('\n')
-    lines = list(filter(None, lines))
+is_interactive = '--interactive' in sys.argv
+if is_interactive:
+    lines = []
+    while len(lines) < VMAX:
+        line = input('Press "q" to start arrangement; otherwise type next line\r\n')
+        if line == 'q':
+            break
+        if len(line) > 0:
+            lines.append(line)
+else:
+    filename = sys.argv[1]
+    with open(filename, mode='r', encoding='utf-8-sig') as fp:
+        lines = str(fp.read()).split('\n')
+        lines = list(filter(None, lines))
 
 # ensure the number of lines is within our range
 V = len(lines)
 if V == 0:
-    raise RuntimeError('Input file %s does not have valid lines' % filename)
+    if is_interactive:
+        raise RuntimeError('No valid lines entered; quitting')
+    else:
+        raise RuntimeError('Input file %s does not have valid lines' % filename)
 if V > VMAX:
     print('Input file exceeds the maximum number of lines supported; truncating to %d lines' % VMAX)
     lines = lines[0:VMAX]

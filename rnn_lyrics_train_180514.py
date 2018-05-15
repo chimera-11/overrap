@@ -13,7 +13,12 @@
 #     This subcharacter embedding reduces the complexity
 #     of the network compared to character-level embedding.
 # Usage:
-#     python rnn_lyrics_train-180514.py <corpus-folder-path>
+#     python rnn_lyrics_train-180514.py <corpus-folder-path> <[optional]testset-folder-path>
+# Options:
+#     --test          compute loss of the specified testset
+#                     using the trained model
+#     --nogpu         forces CPU training even when GPU
+#                     acceleration is available
 # Notes:
 #     The suffix '180514' indicates the major revision date.
 #     In the corpus folder, all files with .txt extension
@@ -40,6 +45,7 @@ def run():
 
     learning_rate = 0.001
     is_test = '--test' in sys.argv
+    is_nogpu = '--nogpu' in sys.argv
     #if is_test: learning_rate = 0
 
     X = tf.placeholder(tf.float32, [None, n_steps, n_inputs], name="X")
@@ -78,10 +84,13 @@ def run():
     lyrics_dataset = LyricsDataset180514(path=data_path, wordset=wordset, seq_len_default=n_steps, seq_len_min=5)
     if is_test:
         n_epochs = 1
-
-    #config = tf.ConfigProto(device_count = {'GPU': 0})
-    #with tf.Session(config=config) as sess:
-    with tf.Session() as sess:
+    
+    if is_nogpu:
+        config = tf.ConfigProto(device_count = {'GPU': 0})
+    else:
+        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.9)
+        config = tf.ConfigProto(gpu_options=gpu_options)
+    with tf.Session(config=config) as sess:
     #with tf.Session() as sess:
         #file_writer = tf.summary.FileWriter('..\\tensorflow-logs', sess.graph)
         #merged = tf.summary.merge_all()

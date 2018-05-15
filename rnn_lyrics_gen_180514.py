@@ -6,7 +6,7 @@
 #     This module generates lyrics based on 
 #     trained RNN model.
 # Usage:
-#     python rnn_lyrics_gen-180514.py <model-path> <priming-phrase> <#-of-char-to-append>
+#     python rnn_lyrics_gen_180514.py <model-path> <priming-phrase> <#-of-char-to-append>
 # Notes:
 #     The suffix '180514' indicates the major revision date.
 #     The model should match that of rnn_lyrics_train_180514.py.
@@ -49,7 +49,7 @@ class RNNLyricsGen180514:
             cell = tf.contrib.rnn.MultiRNNCell(cells)
             seq_length = tf.placeholder(tf.int32, [None])
             # outputs = [batch_size, max_time, cell.output_size]
-            outputs, _ = tf.nn.dynamic_rnn(cell, X, dtype=tf.float32, sequence_length=seq_length)
+            outputs, states = tf.nn.dynamic_rnn(cell, X, dtype=tf.float32, sequence_length=seq_length)
 
             logits = tf.contrib.layers.fully_connected(outputs, n_outputs, activation_fn=None)
             #xentropy = tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=logits)
@@ -70,8 +70,21 @@ class RNNLyricsGen180514:
                 checkpoint_file = os.path.join(model_path, "checkpoint")
                 saver_file = os.path.join(model_path, "model-180514.ckpt")
                 if not os.path.isfile(checkpoint_file):
-                    raise EnvironmentError("Couldn't fild the trained data file 'model.ckpt' in the target directory")
+                    raise EnvironmentError("Couldn't fild the trained data file 'model-180514.ckpt' in the target directory")
                 saver.restore(sess, saver_file)
+                for lstmcell in cells:
+                    lstmcell.zero_state(1, tf.float32)
+                '''
+                for i in range(len(output_str)):
+                    input_str = output_str[0:i]
+                    if len(input_str) < 5:
+                        continue
+                    if len(input_str) > seq_len_default:
+                        input_str = input_str[-seq_len_default:]
+                    X_run, seq_len_run = wordset.bake_up_run(input_str, seq_len_default)
+                    X_run = np.reshape(X_run, (-1, n_steps, n_inputs))
+                    c, _ = sess.run([logits, states], feed_dict={X: X_run, seq_length: [seq_len_run]})
+                '''
                 while len(hangul_comp.process_data(output_str)) < output_count_target \
                     or not hangul.is_complete(output_str) \
                     or (output_str[-1] != ' ' and output_str[0] != '\n'):
@@ -80,7 +93,7 @@ class RNNLyricsGen180514:
                     X_run, seq_len_run = wordset.bake_up_run(input_str, seq_len_default)
                     X_run = np.reshape(X_run, (-1, n_steps, n_inputs))
                     #print(np.shape(X_run))
-                    c = sess.run(logits, feed_dict={X: X_run, seq_length: [seq_len_run]})
+                    c, _ = sess.run([logits, states], feed_dict={X: X_run, seq_length: [seq_len_run]})
                     #print(np.shape(c))
                     c = c[0][seq_len_run-1]
                     b = output_str[-1]
@@ -109,6 +122,6 @@ if __name__  == '__main__':
     model_path = sys.argv[1]
     start_str = sys.argv[2]
     append_str_len = int(sys.argv[3])
-    rnn = RNNLyricsGen(model_path)
+    rnn = RNNLyricsGen180514(model_path)
     output_str = rnn.run(start_str, append_str_len)
     print(start_str + output_str)

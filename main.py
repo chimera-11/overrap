@@ -1,63 +1,40 @@
 from rap_word2vec_180514 import RapWord2Vec180514
-from char_gen_base import CharGenBase
-from char_gen_ngram import CharGenNgram
-from char_gen_rnn import CharGenRNN
-from char_gen_rnn import CharGenRNN180514
-from char_gen_rnn_yangseo import CharGenRNNYangseo
-import hangul_comp
-import random
+from linegen import LineGen
+from rd_eval import RhymeDensityEval
 
-# removes type suffix concatenated by text processor
-# Ex> '찬란하다/Verb' --> '찬란하다'
-def remove_word_type_suffix(word):
-    word = str(word)
-    if '/' in word:
-        return word.rsplit('/', 1)[0]
-    return word
+N = 5
+T = 20
+w2v = RapWord2Vec180514()
+lg = LineGen()
+r = RhymeDensityEval()
 
-rw2v = RapWord2Vec180514()
-#chargen = CharGenRNN('crawl_hiphop')
-#chargen = CharGenRNN('..\\tmp')
-#chargen = CharGenRNN180514('..\\crawl_dance')
-#chargen = CharGenNgram('corpus2\\output_decomp_100000.txt', 5)
-#chargen = CharGenNgram('corpus2\\output_decomp_403340.txt', 6)
-chargen = CharGenRNNYangseo()
+lines = []
+lines.append(lg.generate(' ', 12)[1:])
+for i in range(N - 1):
+    next = ['', -1]
+    prev_line = lines[-1]
+    for j in range(T):
+        next_cand = lg.generate(prev_line + '\n', 12)
+        next_cand = next_cand[len(prev_line):]
+        score = r.eval_between_line_endings(prev_line, next_cand)
+        if score > next[1]:
+            next = [next_cand, score]
+    lines.append(next[0])
+for line in lines:
+    print(line)
+'''
+seq = [0]
 
-def run(a, b):
-    a = remove_word_type_suffix(a)
-    b = remove_word_type_suffix(b)
-    out_str = ''
-    out_str += a + chargen.generate(a, random.randrange(5, 7))
-    out_str += ' ' + b + chargen.generate(out_str + ' ' + b, 5 + random.randrange(-1, 2))
-    out_str = out_str.replace('\n', ' ').replace('  ', ' ')
-    out_str = hangul_comp.process_data(out_str)
-    return out_str
-
-cmd = ''
-
-a = ''
-b = ''
-while True:
-    if cmd == 'q':
-        break
-    if cmd == 'i':
-        a = input('')
-        b = input('')
-    elif cmd == 'r':
-        pass
-    else:
-        a, b = rw2v.sample_pair()
-    tries = 0
-    while tries < 5:
-        try:
-            out_str = run(a, b)
-            break
-        except Exception as e:
-            print(e)
-            tries += 1
-    if tries < 5:
-        print("keywords: " + a + ", " + b)
-        print("generated: " + out_str)
-    else:
-        print("an error occurred; please tolerate for now")
-    cmd = input("q=exit; i=gen from input pairs; r=replay; otherwise generate again: ")
+for i in range(9):
+    last_idx = seq[-1]
+    next_cand = [0, -1]
+    for j in range(N):
+        if j in seq:
+            continue
+        score = r.eval_between_line_endings(lines[last_idx], lines[j])
+        if score > next_cand[1]:
+            next_cand = [j, score]
+    seq.append(next_cand[0])
+for i in seq:
+    print(lines[i])
+'''

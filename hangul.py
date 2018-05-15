@@ -87,3 +87,18 @@ def convert_to_vowel_indices_nofail(input_string):
         else:
             vowels.append(-1)
     return vowels
+
+# Gets decomposed character and determine
+#   whether they can be adjancetly placed
+# Examples:
+#   adjacency_possible('ㅇ', 'ㅏ') = True
+#   adjacency_possible('ㅏ', 'ㅏ') = False
+# Note that for actual call, the decomposed
+# character should be the one in 
+# hangul.{choseongs or joongseongs or jongseongs}
+def adjacency_possible(c1, c2):
+    if is_choseong(c1):
+        return is_joongseong(c2)
+    if is_joongseong(c1):
+        return is_jongseong(c2)
+    return not is_joongseong(c2) and not is_jongseong(c2)
