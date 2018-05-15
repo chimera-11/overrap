@@ -85,6 +85,8 @@ class RNNLyricsGen180514Constraint:
                     raise EnvironmentError("Couldn't fild the trained data file 'model-180514.ckpt' in the target directory")
                 saver.restore(sess, saver_file)
                 def dfs(depth, seq, prob, prev_state):
+                    if prob < self.best_prob:
+                        return # early pruning
                     if depth == len(char_constraint):
                         if prob > self.best_prob:
                             self.best_seq, self.best_prob = seq, prob
