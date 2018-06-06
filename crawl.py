@@ -1,3 +1,15 @@
+# ---------------------------------------------
+#   crawl.py
+#   Copyright (C) 2018 Ahn Byeongkeun
+# ---------------------------------------------
+# Description:
+#     This module crawls lyrics from Melon server.
+# Usage:
+#     python crawlv2.py <start_index> <end_index> <genre> <folder_to_save>
+# Available genres:
+#     balad, dance, hiphop
+
+
 import urllib.request
 import re
 import time
@@ -42,10 +54,7 @@ def querySong(id, myfile):
     myfile.write('\n')
     return True
 
-url_base_hiphop = 'https://www.melon.com/genre/song_list.htm?gnrCode=GN0300#params%5BgnrCode%5D=GN0300&params%5BdtlGnrCode%5D=&params%5BorderBy%5D=NEW&params%5BsteadyYn%5D=N&po=pageObj&startIndex='
-url_base_balad = 'https://www.melon.com/genre/song_list.htm#params%5BgnrCode%5D=GN0100&params%5BdtlGnrCode%5D=&params%5BorderBy%5D=NEW&params%5BsteadyYn%5D=N&po=pageObj&startIndex='
-url_base_dance = 'http://www.melon.com/genre/song_list.htm?gnrCode=GN0200#params%5BgnrCode%5D=GN0200&params%5BdtlGnrCode%5D=&params%5BorderBy%5D=NEW&params%5BsteadyYn%5D=N&po=pageObj&startIndex='
-url_base = url_base_balad
+url_base = 'https://www.melon.com/genre/song_listPaging.htm?startIndex=%s&pageSize=50&gnrCode=%s&dtlGnrCode=&orderBy=NEW&steadyYn=N'
 
 _caps = DesiredCapabilities.PHANTOMJS
 _caps["phantomjs.page.settings.userAgent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36"
@@ -53,12 +62,20 @@ _my_driver = webdriver.PhantomJS(service_args=['--proxy-type=none'])
 
 i_start = int(sys.argv[1])      # inclusive
 i_end = int(sys.argv[2])        # exclusive
-os.chdir(sys.argv[3])
+genre_alias = sys.argv[3]
+os.chdir(sys.argv[4])
+
+code_dict = {'balad': 'GN0100', 'dance': 'GN0200', 'hiphop': 'GN0300'}
+genre_code = code_dict.get(genre_alias)
+if genre_code is None:
+    raise EnvironmentError('Unknown genre %s' % genre_alias)
+
 
 def run_download(i_start, i_end):
+    download_dynamic('https://www.melon.com/genre/song_list.htm?gnrCode=%s' % genre_code, 7)
     for k in range(i_start, i_end):
         i = 50 * k + 1
-        text = download_dynamic(url_base + str(i), 7)
+        text = download_dynamic(url_base % (str(i), genre_code), 0)
         regex = re.compile(r"javascript:melon\.link\.goSongDetail\('(\d+)'\)")
         nums = regex.findall(text)
         yet_to_succeed = True
