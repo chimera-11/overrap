@@ -55,6 +55,7 @@ def run():
     for i in range(n_layers):
         cell_name = 'cell%d' % i
         cell = tf.contrib.rnn.BasicLSTMCell(num_units=n_neurons, name=cell_name)
+        cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob=0.5)
         cells.append(cell)
     cell = tf.contrib.rnn.MultiRNNCell(cells)
     seq_length = tf.placeholder(tf.int32, [None])

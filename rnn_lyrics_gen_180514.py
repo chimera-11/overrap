@@ -51,7 +51,7 @@ class RNNLyricsGen180514:
             cell = tf.contrib.rnn.MultiRNNCell(cells)
             seq_length = tf.placeholder(tf.int32, [None])
             # outputs = [batch_size, max_time, cell.output_size]
-            outputs, states = tf.nn.dynamic_rnn(cell, X, dtype=tf.float32, sequence_length=seq_length)
+            outputs, states_original = tf.nn.dynamic_rnn(cell, X, dtype=tf.float32, sequence_length=seq_length)
 
             logits = tf.contrib.layers.fully_connected(outputs, n_outputs, activation_fn=None)
             #xentropy = tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=logits)
@@ -78,6 +78,7 @@ class RNNLyricsGen180514:
                 for _ in range(generate_count):
                     output_str = hangul_decomp.process_data(start_str)
                     return_str = ''
+                    states = states_original
                     '''
                     for i in range(len(output_str)):
                         input_str = output_str[0:i]
