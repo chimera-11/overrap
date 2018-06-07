@@ -24,6 +24,7 @@ class LineGen:
         self.chargen = CharGenRNN180514('crawl_dance_180514')
         #self.chargen = CharGenRNN180514('..\\crawl_balad')
         #self.chargen = CharGenRNN180514('crawl_hiphop')
+        #self.chargen = CharGenNgram('..\\crawl_dance\\output_decomp.txt', 6)
         #self.chargen = CharGenNgram('corpus2\\output_decomp_100000.txt', 5)
         #self.chargen = CharGenNgram('corpus2\\output_decomp_403340.txt', 6)
         #self.chargen = CharGenRNNYangseo('RNN\\save_balad')
@@ -33,6 +34,15 @@ class LineGen:
         out_str = out_str.replace('\r', '').replace('\n', ' ').replace('  ', ' ')
         out_str = hangul_comp.process_data(out_str)
         return out_str
+    def generate_multi(self, primer_text, str_len, count):
+        pre_result = self.chargen.generate_multi(primer_text, str_len, count)
+        result = []
+        for line in pre_result:
+            line = primer_text + line
+            line = line.replace('\r', '').replace('\n', '').replace('  ', ' ')
+            line = hangul_comp.process_data(line)
+            result.append(line)
+        return result
     def run(self, a, b):
         a = remove_word_type_suffix(a)
         b = remove_word_type_suffix(b)

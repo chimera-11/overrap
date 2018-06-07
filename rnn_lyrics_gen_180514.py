@@ -27,6 +27,8 @@ class RNNLyricsGen180514:
     def __init__(self, model_path):
         self.model_path = model_path
     def run(self, start_str, append_count):
+        return self.run_multi(start_str, append_count, 1)[0]
+    def run_multi(self, start_str, append_count, generate_count):
         with tf.Graph().as_default():       # use local graph, prevent parameter duplicate issue
             model_path = self.model_path
 
@@ -56,14 +58,13 @@ class RNNLyricsGen180514:
 
             init = tf.global_variables_initializer()
 
-            output_str = hangul_decomp.process_data(start_str)
             output_count_target = len(start_str) + append_count
-            return_str = ''
             seq_len_default = 30
 
             config = tf.ConfigProto(
                     device_count = {'GPU': 0} # don't use GPU for generation
                 )
+            results = []
             with tf.Session(config=config) as sess:
                 init.run()
                 saver = tf.train.Saver()
@@ -74,49 +75,54 @@ class RNNLyricsGen180514:
                 saver.restore(sess, saver_file)
                 for lstmcell in cells:
                     lstmcell.zero_state(1, tf.float32)
-                '''
-                for i in range(len(output_str)):
-                    input_str = output_str[0:i]
-                    if len(input_str) < 5:
-                        continue
-                    if len(input_str) > seq_len_default:
-                        input_str = input_str[-seq_len_default:]
-                    X_run, seq_len_run = wordset.bake_up_run(input_str, seq_len_default)
-                    X_run = np.reshape(X_run, (-1, n_steps, n_inputs))
-                    c, _ = sess.run([logits, states], feed_dict={X: X_run, seq_length: [seq_len_run]})
-                '''
-                while len(hangul_comp.process_data(output_str)) < output_count_target \
-                    or not hangul.is_complete(output_str) \
-                    or (output_str[-1] != ' ' and output_str[0] != '\n'):
-                    # predict next character
-                    input_str = output_str[-seq_len_default:]
-                    X_run, seq_len_run = wordset.bake_up_run(input_str, seq_len_default)
-                    X_run = np.reshape(X_run, (-1, n_steps, n_inputs))
-                    #print(np.shape(X_run))
-                    c, _ = sess.run([logits, states], feed_dict={X: X_run, seq_length: [seq_len_run]})
-                    #print(np.shape(c))
-                    c = c[0][seq_len_run-1]
-                    b = output_str[-1]
-                    if hangul.is_choseong(b):
-                        option = "choseong"
-                    elif hangul.is_joongseong(b):
-                        option = "joongseong"
-                    elif hangul.is_jongseong(b):
-                        option = "jongseong"
-                    else:
-                        option = "not_hangul"
-                    c_sample = wordset.sample_context_aware(mathutils.softmax(c), option)
-                    #c_sample = wordset.sample_from(mathutils.softmax(c))
-                    output_str += c_sample
-                    return_str += c_sample
-                    """
-                    if hangul.is_jongseong(output_str[-1]) and hangul.is_complete(output_str):
-                        c_new = hangul_comp.process_data(output_str[-3:])
-                        if not hangul.in_wanseong(c_new):
-                            output_str = output_str[:-3]
-                            return_str = return_str[:-3]
-                    """
-        return hangul_comp.process_data(return_str)
+                for _ in range(generate_count):
+                    output_str = hangul_decomp.process_data(start_str)
+                    return_str = ''
+                    '''
+                    for i in range(len(output_str)):
+                        input_str = output_str[0:i]
+                        if len(input_str) < 5:
+                            continue
+                        if len(input_str) > seq_len_default:
+                            input_str = input_str[-seq_len_default:]
+                        X_run, seq_len_run = wordset.bake_up_run(input_str, seq_len_default)
+                        X_run = np.reshape(X_run, (-1, n_steps, n_inputs))
+                        c, _ = sess.run([logits, states], feed_dict={X: X_run, seq_length: [seq_len_run]})
+                    '''
+                    while len(hangul_comp.process_data(output_str)) < output_count_target \
+                        or not hangul.is_complete(output_str) \
+                        or (output_str[-1] != ' ' and output_str[0] != '\n'):
+                        # predict next character
+                        input_str = output_str[-seq_len_default:]
+                        X_run, seq_len_run = wordset.bake_up_run(input_str, seq_len_default)
+                        X_run = np.reshape(X_run, (-1, n_steps, n_inputs))
+                        #print(np.shape(X_run))
+                        c, _ = sess.run([logits, states], feed_dict={X: X_run, seq_length: [seq_len_run]})
+                        #print(np.shape(c))
+                        c = c[0][seq_len_run-1]
+                        b = output_str[-1]
+                        if hangul.is_choseong(b):
+                            option = "choseong"
+                        elif hangul.is_joongseong(b):
+                            option = "joongseong"
+                        elif hangul.is_jongseong(b):
+                            option = "jongseong"
+                        else:
+                            option = "not_hangul"
+                        c_sample = wordset.sample_context_aware(mathutils.softmax(c), option)
+                        #c_sample = wordset.sample_from(mathutils.softmax(c))
+                        output_str += c_sample
+                        return_str += c_sample
+                        """
+                        if hangul.is_jongseong(output_str[-1]) and hangul.is_complete(output_str):
+                            c_new = hangul_comp.process_data(output_str[-3:])
+                            if not hangul.in_wanseong(c_new):
+                                output_str = output_str[:-3]
+                                return_str = return_str[:-3]
+                        """
+                    results.append(hangul_comp.process_data(return_str))
+                    print(results)
+        return results
 
 if __name__  == '__main__':
     model_path = sys.argv[1]

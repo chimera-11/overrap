@@ -3,4 +3,5 @@ class CharGenBase:
     # out_len: character count (not phoneme) to append
     def generate(self, input_str, out_len):
         pass
-    
+    def generate_multi(self, input_str, out_len, count):
+        pass

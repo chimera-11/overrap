@@ -120,10 +120,12 @@ class RNNLyricsGen180514Constraint:
                                 dfs(depth + 1, seq + char, prob * char_prob, state)
                                 child_cnt += 1
                             i += 1
+                        '''
                         if seq[-1] != ' ' and hangul.adjacency_possible(seq[-1], ' '):
                             space_idx = wordset.char_to_index(' ')
                             space_prob = c[space_idx]
                             dfs(depth + 1, seq + ' ', prob * space_prob, state)
+                        '''
                     else:
                         fixed_char_idx = char_constraint[depth]
                         fixed_char = wordset.wordset[fixed_char_idx]

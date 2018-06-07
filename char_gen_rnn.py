@@ -13,3 +13,5 @@ class CharGenRNN180514(CharGenBase):
         self.rnn = RNNLyricsGen180514(model_path)
     def generate(self, input_str, out_len):
         return self.rnn.run(input_str, out_len)
+    def generate_multi(self, input_str, out_len, count):
+        return self.rnn.run_multi(input_str, out_len, count)

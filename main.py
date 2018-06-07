@@ -6,7 +6,8 @@ from rnn_lyrics_gen_180514_constraint import RNNLyricsGen180514Constraint
 from rd_eval import RhymeDensityEval
 
 N = 4
-T = 5
+C = 20
+T = 4
 w2v = RapWord2Vec180514()
 lg = LineGen()
 r = RhymeDensityEval()
@@ -29,29 +30,41 @@ def fix_line_ending(template, target):
     def try_update(target):
         nonlocal target_fixed_str
         nonlocal target_prob
-        for cst_len in [6, 7, 8]:
-            char_constraint = [-1] * cst_len
-            char_constraint[-3] = vindex
-            char_constraint[-1] = hangul.phoneme_to_index(' ')
-            fixed_str, prob = fixer.run(target, char_constraint, pruning_prob=target_prob)
-            if prob > target_prob:
-                target_fixed_str, target_prob = fixed_str, prob
+        for last_char in [' ', '\n']:
+            for cst_len in [4, 5, 6, 7, 8]:
+                char_constraint = [-1] * cst_len
+                char_constraint[-3] = vindex
+                char_constraint[-1] = hangul.phoneme_to_index(last_char)
+                fixed_str, prob = fixer.run(target, char_constraint, pruning_prob=target_prob)
+                if prob > target_prob:
+                    target_fixed_str, target_prob = fixed_str, prob
     try_update(target)
+    #try_update(lg.run(target, 1))
     try_update(target[:-1])
+    #try_update(target[:-2])
     return strutils.normalize(target_fixed_str)
 
 lines = []
-lines.append(lg.generate(' ', 12)[1:])
+lines.append(lg.generate(' ', 14)[1:])
 for i in range(N - 1):
-    next = ['', -1]
     prev_line = lines[-1]
-    for j in range(T):
-        next_cand = lg.generate(prev_line + '\n', 12)
-        next_cand = next_cand[len(prev_line):]
-        next_cand = fix_line_ending(prev_line, next_cand)
-        score = r.eval_between_line_endings(prev_line, next_cand)
+    pre_candidates = lg.generate_multi(prev_line + '\n', 11, C)
+    candidates = []
+    for cand in pre_candidates:
+        cand = cand[len(prev_line):]
+        if len(cand) >= 13:
+            pass
+        score = r.eval_between(prev_line, cand)
+        candidates.append((cand, score))
+    candidates = sorted(candidates, key=lambda x: x[1], reverse=True)
+    print(candidates)
+    next = ['', -1]
+    for j in range(min(T, len(candidates))):
+        cand = candidates[i][0]
+        cand = fix_line_ending(prev_line, cand)
+        score = r.eval_between_line_endings(prev_line, cand)
         if score > next[1]:
-            next = [next_cand, score]
+            next = [cand, score]
     lines.append(next[0])
 for line in lines:
     print(line)
