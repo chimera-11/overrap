@@ -30,8 +30,9 @@ class LineGen:
         #self.chargen = CharGenNgram('corpus2\\output_decomp_403340.txt', 6)
         #self.chargen = CharGenRNNYangseo('RNN\\save_balad')
         #self.chargen = CharGenRNNYangseo('RNN\\save_180515')
-    def generate(self, primer_text, str_len):
-        out_str = primer_text + self.chargen.generate(primer_text, str_len)
+    def generate(self, primer_text, str_len, include_primer=True):
+        gen_str = self.chargen.generate(primer_text, str_len)
+        out_str = primer_text + gen_str if include_primer else gen_str
         out_str = out_str.replace('\r', '').replace('\n', ' ').replace('  ', ' ')
         out_str = hangul_comp.process_data(out_str)
         return out_str

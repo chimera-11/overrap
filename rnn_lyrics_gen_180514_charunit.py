@@ -1,12 +1,15 @@
 # ---------------------------------------------
-#   rnn_lyrics_gen_180514.py
+#   rnn_lyrics_gen_180514_charunit.py
 #   Copyright (C) 2018 Ahn Byeongkeun
 # ---------------------------------------------
 # Description:
 #     This module generates lyrics based on 
 #     trained RNN model.
+#     The difference from vanilla generator is that
+#     this module performs sampling on character level,
+#     not on phoneme level.
 # Usage:
-#     python rnn_lyrics_gen_180514.py <model-path> <priming-phrase> <#-of-char-to-append>
+#     python rnn_lyrics_gen_180514_charunit.py <model-path> <priming-phrase> <#-of-char-to-append>
 # Notes:
 #     The suffix '180514' indicates the major revision date.
 #     The model should match that of rnn_lyrics_train_180514.py.
@@ -51,7 +54,9 @@ class RNNLyricsGen180514:
             cell = tf.contrib.rnn.MultiRNNCell(cells)
             seq_length = tf.placeholder(tf.int32, [None])
             # outputs = [batch_size, max_time, cell.output_size]
-            outputs, states_original = tf.nn.dynamic_rnn(cell, X, dtype=tf.float32, sequence_length=seq_length)
+            init_states = cell.zero_state(1, tf.float32)
+            outputs, states = tf.nn.dynamic_rnn(cell, X, dtype=tf.float32,
+                sequence_length=seq_length, initial_state=init_states)
 
             logits = tf.contrib.layers.fully_connected(outputs, n_outputs, activation_fn=None)
             #xentropy = tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=logits)
@@ -76,9 +81,8 @@ class RNNLyricsGen180514:
                 for lstmcell in cells:
                     lstmcell.zero_state(1, tf.float32)
                 for _ in range(generate_count):
-                    output_str = hangul_decomp.process_data(start_str)
+                    output_str = start_str
                     return_str = ''
-                    states = states_original
                     '''
                     for i in range(len(output_str)):
                         input_str = output_str[0:i]
@@ -90,39 +94,69 @@ class RNNLyricsGen180514:
                         X_run = np.reshape(X_run, (-1, n_steps, n_inputs))
                         c, _ = sess.run([logits, states], feed_dict={X: X_run, seq_length: [seq_len_run]})
                     '''
-                    while len(hangul_comp.process_data(output_str)) < output_count_target \
-                        or not hangul.is_complete(output_str) \
-                        or (output_str[-1] != ' ' and output_str[0] != '\n'):
-                        # predict next character
-                        input_str = output_str[-seq_len_default:]
+                    def predict_phoneme(decomposed_seq, prev_state):
+                        input_str = decomposed_seq[-seq_len_default:]
                         X_run, seq_len_run = wordset.bake_up_run(input_str, seq_len_default)
                         X_run = np.reshape(X_run, (-1, n_steps, n_inputs))
-                        #print(np.shape(X_run))
-                        c, _ = sess.run([logits, states], feed_dict={X: X_run, seq_length: [seq_len_run]})
-                        #print(np.shape(c))
+                        c, new_state = sess.run([logits, states],
+                            feed_dict={X: X_run, seq_length: [seq_len_run], init_states: prev_state})
                         c = c[0][seq_len_run-1]
-                        b = output_str[-1]
-                        if hangul.is_choseong(b):
-                            option = "choseong"
-                        elif hangul.is_joongseong(b):
-                            option = "joongseong"
-                        elif hangul.is_jongseong(b):
-                            option = "jongseong"
-                        else:
-                            option = "not_hangul"
-                        c /= 0.5
-                        c_sample = wordset.sample_context_aware(mathutils.softmax(c), option)
-                        #c_sample = wordset.sample_from(mathutils.softmax(c))
-                        output_str += c_sample
-                        return_str += c_sample
-                        """
-                        if hangul.is_jongseong(output_str[-1]) and hangul.is_complete(output_str):
-                            c_new = hangul_comp.process_data(output_str[-3:])
-                            if not hangul.in_wanseong(c_new):
-                                output_str = output_str[:-3]
-                                return_str = return_str[:-3]
-                        """
-                    results.append(hangul_comp.process_data(return_str))
+                        c = mathutils.softmax(c)
+                        return c, new_state
+                    def calc_prob(prev_state, primer, trailer):
+                        primer = hangul_decomp.process_data(primer)
+                        trailer = hangul_decomp.process_data(trailer)
+                        states = prev_state
+                        prob = 1.0
+                        for c in list(trailer):
+                            probs, states = predict_phoneme(primer, states)
+                            cindex = hangul.phoneme_to_index(c)
+                            prob *= probs[cindex]
+                            primer += c
+                        return prob
+                    def calc_candidates(prev_state, primer):
+                        decomposed_seq = hangul_decomp.process_data(primer)
+                        # returns a list of (char, prob, state) tuple
+                        result = []
+                        # 1. hangul
+                        window = [(0, len(hangul.choseongs)),
+                            (len(hangul.choseongs), len(hangul.choseongs) + len(hangul.joongseongs)),
+                            (len(hangul.choseongs) + len(hangul.joongseongs), len(hangul.choseongs) + len(hangul.joongseongs) + len(hangul.jongseongs))]
+                        def char_dfs(inner_state, decomposed_seq, depth, prob):
+                            if depth == 3:
+                                c = hangul_comp.process_data(decomposed_seq[-3:])
+                                result.append((c, pow(prob, 1/3), inner_state))
+                                return
+                            probs, state = predict_phoneme(decomposed_seq, inner_state)
+                            probs = list(enumerate(probs))[window[depth][0]:window[depth][1]]
+                            probs = sorted(probs, key=lambda x: x[1], reverse=True)
+                            for j in range(3):
+                                cidx, cprob = probs[j]
+                                c = hangul.default_wordset[cidx]
+                                char_dfs(state, decomposed_seq + c, depth + 1, prob * cprob)
+                        char_dfs(prev_state, decomposed_seq, 0, 1.0)
+                        # 2. space and newline
+                        # note that we don't allow them to appear in a row
+                        probs, state = predict_phoneme(decomposed_seq, prev_state)
+                        if primer[-1] != ' ' and primer[-1] != '\n':
+                            idx = wordset.char_to_index(' ')
+                            result.append((' ', probs[idx], state))
+                            idx = wordset.char_to_index('\n')
+                            result.append(('\n', probs[idx], state))
+                        result = sorted(result, key=lambda x: x[1], reverse=True)
+                        result = result[0:7]
+                        return result
+                    state = sess.run(cell.zero_state(1, tf.float32))
+                    while len(output_str) < output_count_target:
+                        cands = calc_candidates(state, output_str)
+                        probs = np.array([x[1] for x in cands])
+                        probs = probs / np.sum(probs)
+                        idx = np.random.choice(len(probs), p=probs)
+                        c = cands[idx][0]
+                        print(c)
+                        output_str += c
+                        return_str += c
+                    results.append(return_str)
                     print(results)
         return results
 

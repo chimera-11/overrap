@@ -40,7 +40,11 @@ class RNNLyricsGen180514Biconstraint:
         wordset = hangul.choseongs + hangul.joongseongs + hangul.jongseongs + [' ', '\n']
         self.wordset = Wordset(wordset)
     def run(self, leading, trailing, num_chars):
-        return self.run_multi(leading, trailing, num_chars, 1)[0]
+        results = self.run_multi(leading, trailing, num_chars, 6)
+        probs = np.array([x[1] for x in results])
+        probs = probs / np.sum(probs)
+        idx = np.random.choice(len(probs), p=probs)
+        return results[idx]
     def run_multi(self, leading, trailing, num_chars, gen_count):
         with tf.Graph().as_default():       # use local graph, prevent parameter duplicate issue
             model_path = self.model_path
@@ -129,11 +133,13 @@ class RNNLyricsGen180514Biconstraint:
                             char_dfs(state, decomposed_seq + c, depth + 1, prob * cprob)
                     char_dfs(prev_state, decomposed_seq, 0, 1.0)
                     # 2. space and newline
+                    # note that we don't allow them to appear in a row
                     probs, state = predict_phoneme(decomposed_seq, prev_state)
-                    idx = wordset.char_to_index(' ')
-                    result.append((' ', probs[idx], state))
-                    idx = wordset.char_to_index('\n')
-                    result.append(('\n', probs[idx], state))
+                    if primer[-1] != ' ' and primer[-1] != '\n':
+                        idx = wordset.char_to_index(' ')
+                        result.append((' ', probs[idx], state))
+                        idx = wordset.char_to_index('\n')
+                        result.append(('\n', probs[idx], state))
                     result = sorted(result, key=lambda x: x[1], reverse=True)
                     result = result[0:3]
                     #print(result[0][0]+result[1][0]+result[2][0])
