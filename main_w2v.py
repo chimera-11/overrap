@@ -7,14 +7,14 @@ from rnn_lyrics_gen_180514_biconstraint import RNNLyricsGen180514Biconstraint
 from rnn_lyrics_gen_180616_biconstraint import RNNLyricsGen180616Biconstraint
 from rd_eval import RhymeDensityEval
 
-C = 10
+C = 20
 T = 4
 w2v = RapWord2Vec180514()
 lg = LineGen()
 r = RhymeDensityEval()
 fixer = RNNLyricsGen180514Constraint('crawl_dance_180514')
 #gap_filler = RNNLyricsGen180514Biconstraint('crawl_dance_180514')
-gap_filler = RNNLyricsGen180616Biconstraint('crawl_dance_180606')
+gap_filler = RNNLyricsGen180616Biconstraint('..\\crawl_dance_180606')
 
 compatible_classes = {
     '아': ['아', '와'],
@@ -111,10 +111,10 @@ for i in range(L):
         def gen_with_biconstraint():
             print('Sandwich modulation in progress...')
             primer = prev_concat + start_word
-            count = 9 - len(start_word)
+            count = 10 - len(start_word)
             line = start_word + lg.generate(primer, count, include_primer=False)
             line = line[:len(start_word) + count]
-            vindices = get_vindices(line[i - 1]) if i > 0 else None
+            vindices = get_vindices(lines[i - 1]) if i > 0 else None
             line = gap_filler.run(primer + line, '\n' + trailer, 4, vindices=vindices)[0]
             line = line[len(primer):]
             line = strutils.normalize(line)
@@ -144,9 +144,9 @@ for i in range(L):
         candidates = []
         for cand in pre_candidates:
             cand = cand[len(prev_concat):]
+            cand = strutils.normalize(cand)
             if len(cand) >= 15:
                 pass
-            cand = strutils.normalize(cand)
             score = r.eval_between(prev_concat, cand)
             candidates.append((cand, score))
         candidates = sorted(candidates, key=lambda x: x[1], reverse=True)
