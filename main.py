@@ -5,19 +5,20 @@ from linegen import LineGen
 from rnn_lyrics_gen_180514_constraint import RNNLyricsGen180514Constraint
 from rd_eval import RhymeDensityEval
 
-N = 2
-C = 10
+N = 4
+C = 20
 T = 4
 w2v = RapWord2Vec180514()
 lg = LineGen()
 r = RhymeDensityEval()
-fixer = RNNLyricsGen180514Constraint('crawl_dance_180514')
+#fixer = RNNLyricsGen180514Constraint('crawl_dance_180514')
+fixer = RNNLyricsGen180514Constraint('..\\crawl_dance')
 
 compatible_classes = {
     '아': ['아', '와'],
     '야': ['야'],
     '어': ['어', '워'],
-    '여': ['여'],
+    '여': ['여', '어'],
     '오': ['오'],
     '요': ['요'],
     '우': ['우'],
@@ -86,7 +87,7 @@ def lines2str(lines):
     return result
 
 lines = []
-lines.append(lg.generate(' ', 14)[1:])
+lines.append(lg.generate('\n', 14)[1:])
 for i in range(N - 1):
     prev_line = lines[-1]
     prev_lines = lines2str(lines)
@@ -94,7 +95,7 @@ for i in range(N - 1):
     candidates = []
     for cand in pre_candidates:
         cand = cand[len(prev_lines):]
-        if len(cand) >= 13:
+        if len(cand) >= 14:
             pass
         score = r.eval_between(prev_line, cand)
         candidates.append((cand, score))

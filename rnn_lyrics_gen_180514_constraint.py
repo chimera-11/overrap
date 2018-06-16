@@ -48,7 +48,7 @@ class RNNLyricsGen180514Constraint:
             wordset = self.wordset
 
             n_inputs = len(wordset)     # number of features (= wordset size)
-            n_steps = 30                # length of input sequence
+            n_steps = 15                # length of input sequence
             n_neurons = 512             # learning capacity of the network (pretty much arbitrary)
             n_layers = 4                # number of layers
             n_outputs = len(wordset)    # number of output classes (= wordset size)
@@ -75,7 +75,7 @@ class RNNLyricsGen180514Constraint:
             start_str_decomp = hangul_decomp.process_data(start_str)
             output_str = start_str_decomp
             return_str = ''
-            seq_len_default = 30
+            seq_len_default = n_steps
 
             self.best_seq = []
             self.best_prob = 0

@@ -51,7 +51,9 @@ class RNNLyricsGen180514:
             cell = tf.contrib.rnn.MultiRNNCell(cells)
             seq_length = tf.placeholder(tf.int32, [None])
             # outputs = [batch_size, max_time, cell.output_size]
-            outputs, states_original = tf.nn.dynamic_rnn(cell, X, dtype=tf.float32, sequence_length=seq_length)
+            init_states = cell.zero_state(1, tf.float32)
+            outputs, states = tf.nn.dynamic_rnn(cell, X,
+                dtype=tf.float32, sequence_length=seq_length, initial_state=init_states)
 
             logits = tf.contrib.layers.fully_connected(outputs, n_outputs, activation_fn=None)
             #xentropy = tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=logits)
@@ -59,7 +61,7 @@ class RNNLyricsGen180514:
             init = tf.global_variables_initializer()
 
             output_count_target = len(start_str) + append_count
-            seq_len_default = 30
+            seq_len_default = n_steps
 
             config = tf.ConfigProto(
                     device_count = {'GPU': 0} # don't use GPU for generation
@@ -78,8 +80,7 @@ class RNNLyricsGen180514:
                 for _ in range(generate_count):
                     output_str = hangul_decomp.process_data(start_str)
                     return_str = ''
-                    states = states_original
-                    '''
+                    state = sess.run(cell.zero_state(1, tf.float32))
                     for i in range(len(output_str)):
                         input_str = output_str[0:i]
                         if len(input_str) < 5:
@@ -88,8 +89,8 @@ class RNNLyricsGen180514:
                             input_str = input_str[-seq_len_default:]
                         X_run, seq_len_run = wordset.bake_up_run(input_str, seq_len_default)
                         X_run = np.reshape(X_run, (-1, n_steps, n_inputs))
-                        c, _ = sess.run([logits, states], feed_dict={X: X_run, seq_length: [seq_len_run]})
-                    '''
+                        c, state = sess.run([logits, states],
+                            feed_dict={X: X_run, seq_length: [seq_len_run], init_states: state})
                     while len(hangul_comp.process_data(output_str)) < output_count_target \
                         or not hangul.is_complete(output_str) \
                         or (output_str[-1] != ' ' and output_str[0] != '\n'):
@@ -98,7 +99,8 @@ class RNNLyricsGen180514:
                         X_run, seq_len_run = wordset.bake_up_run(input_str, seq_len_default)
                         X_run = np.reshape(X_run, (-1, n_steps, n_inputs))
                         #print(np.shape(X_run))
-                        c, _ = sess.run([logits, states], feed_dict={X: X_run, seq_length: [seq_len_run]})
+                        c, state = sess.run([logits, states],
+                            feed_dict={X: X_run, seq_length: [seq_len_run], init_states: state})
                         #print(np.shape(c))
                         c = c[0][seq_len_run-1]
                         b = output_str[-1]
@@ -115,13 +117,6 @@ class RNNLyricsGen180514:
                         #c_sample = wordset.sample_from(mathutils.softmax(c))
                         output_str += c_sample
                         return_str += c_sample
-                        """
-                        if hangul.is_jongseong(output_str[-1]) and hangul.is_complete(output_str):
-                            c_new = hangul_comp.process_data(output_str[-3:])
-                            if not hangul.in_wanseong(c_new):
-                                output_str = output_str[:-3]
-                                return_str = return_str[:-3]
-                        """
                     results.append(hangul_comp.process_data(return_str))
                     print(results)
         return results

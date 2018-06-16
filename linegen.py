@@ -20,8 +20,9 @@ class LineGen:
         self.rw2v = RapWord2Vec180514()
         #self.chargen = CharGenRNN('crawl_hiphop')
         #self.chargen = CharGenRNN('..\\tmp')
-        self.chargen = CharGenRNN180514('..\\crawl_dance')
+        #self.chargen = CharGenRNN180514('..\\crawl_dance')
         #self.chargen = CharGenRNN180514('..\\crawl_dance_180606')
+        self.chargen = CharGenRNN180514('..\\crawl_dance_180606_sanitize')
         #self.chargen = CharGenRNN180514('crawl_dance_180514')
         #self.chargen = CharGenRNN180514('..\\crawl_balad')
         #self.chargen = CharGenRNN180514('crawl_hiphop')
@@ -33,7 +34,7 @@ class LineGen:
     def generate(self, primer_text, str_len, include_primer=True):
         gen_str = self.chargen.generate(primer_text, str_len)
         out_str = primer_text + gen_str if include_primer else gen_str
-        out_str = out_str.replace('\r', '').replace('\n', ' ').replace('  ', ' ')
+        #out_str = out_str.replace('\r', '').replace('\n', ' ').replace('  ', ' ').strip()
         out_str = hangul_comp.process_data(out_str)
         return out_str
     def generate_multi(self, primer_text, str_len, count):
@@ -41,7 +42,7 @@ class LineGen:
         result = []
         for line in pre_result:
             line = primer_text + line
-            line = line.replace('\r', '').replace('\n', '').replace('  ', ' ')
+            #line = line.replace('\r', '').replace('\n', '').replace('  ', ' ').strip()
             line = hangul_comp.process_data(line)
             result.append(line)
         return result

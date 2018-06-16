@@ -4,27 +4,28 @@ from rap_word2vec_180514 import RapWord2Vec180514
 from linegen import LineGen
 from rnn_lyrics_gen_180514_constraint import RNNLyricsGen180514Constraint
 from rnn_lyrics_gen_180514_biconstraint import RNNLyricsGen180514Biconstraint
+from rnn_lyrics_gen_180616_biconstraint import RNNLyricsGen180616Biconstraint
 from rd_eval import RhymeDensityEval
 
-N = 2
 C = 10
 T = 4
 w2v = RapWord2Vec180514()
 lg = LineGen()
 r = RhymeDensityEval()
 fixer = RNNLyricsGen180514Constraint('crawl_dance_180514')
-gap_filler = RNNLyricsGen180514Biconstraint('crawl_dance_180514')
+#gap_filler = RNNLyricsGen180514Biconstraint('crawl_dance_180514')
+gap_filler = RNNLyricsGen180616Biconstraint('crawl_dance_180606')
 
 compatible_classes = {
     '아': ['아', '와'],
-    '야': ['야'],
+    '야': ['야', '아'],
     '어': ['어', '워'],
-    '여': ['여'],
+    '여': ['여', '어'],
     '오': ['오'],
     '요': ['요'],
     '우': ['우'],
     '유': ['유'],
-    '으': ['으'],
+    '으': ['으', '이'],
     '이': ['이', '위', '의'],
     '애': ['애', '에', '왜', '외', '얘'],
     '에': ['에', '애', '왜', '웨', '외', '예'],
@@ -42,13 +43,10 @@ compatible_classes = {
 def locate_vset(vindex):
     for k, v in compatible_classes.items():
         if hangul.get_vowel_index(k) == vindex:
-            return v
+                return v
     return None # shouldn't happen
 
-# Fixes target string to have the same
-# ending rhyme with template, using
-# the ending vowel of template
-def fix_line_ending(template, target):
+def get_vindices(template):
     vindices = None # vowel index
     for c in reversed(template):
         if hangul.is_hangul_char(c):
@@ -58,6 +56,13 @@ def fix_line_ending(template, target):
                 hangul.joongseongs[hangul.get_vowel_index(x)]
                 ) for x in vset]
             break
+    return vindices
+
+# Fixes target string to have the same
+# ending rhyme with template, using
+# the ending vowel of template
+def fix_line_ending(template, target):
+    vindices = get_vindices(template)
     if vindices == None:
         return target # we can't change
     target_fixed_str = ''
@@ -69,7 +74,7 @@ def fix_line_ending(template, target):
             print(hangul.default_wordset[vindex])
             #for last_char in [' ', '\n']:
             for last_char in ['\n']:
-                for cst_len in [4, 5, 6, 7]:
+                for cst_len in [4, 5, 6]:
                     char_constraint = [-1] * cst_len
                     char_constraint[-3] = vindex
                     char_constraint[-1] = hangul.phoneme_to_index(last_char)
@@ -78,7 +83,7 @@ def fix_line_ending(template, target):
                         target_fixed_str, target_prob = fixed_str, prob
     try_update(target[:-1])
     try_update(target[:-2])
-    return strutils.normalize(target_fixed_str)
+    return strutils.normalize(target_fixed_str), target_prob
 
 def lines2str(lines):
     result = ''
@@ -86,36 +91,104 @@ def lines2str(lines):
         result += line + '\n'
     return result
 
-lines = []
 w1, w2 = w2v.sample_pair()
 w3 = w2v.sample_pair(w2)[1]
-w4 = w2v.sample_pair(w3)[1]
-print('w1=%s, w2=%s' % (w1, w2))
-print('w3=%s, w4=%s' % (w3, w4))
-line1 = lg.generate(w1, 6)
-line1 = gap_filler.run(line1, '\n' + w2, 4)[0]
+print('w1=%s, w2=%s, w3=%s' % (w1, w2, w3))
+#w1 = w1[0:3]
+#w2 = w2[0:3]
+#w3 = w3[0:3]
+
+start_words = [w1, w2, '', w3, '']
+#start_words = [w1, w2, '']
+lines = []
+prev_concat = ''
+L = len(start_words) - 1
+
+for i in range(L):
+    start_word = start_words[i]
+    trailer = start_words[i + 1]
+    if len(trailer) > 0:
+        def gen_with_biconstraint():
+            print('Sandwich modulation in progress...')
+            primer = prev_concat + start_word
+            count = 9 - len(start_word)
+            line = start_word + lg.generate(primer, count, include_primer=False)
+            line = line[:len(start_word) + count]
+            vindices = get_vindices(line[i - 1]) if i > 0 else None
+            line = gap_filler.run(primer + line, '\n' + trailer, 4, vindices=vindices)[0]
+            line = line[len(primer):]
+            line = strutils.normalize(line)
+            print('Sandwich modulation done')
+            return line
+        if i == 0:
+            line = gen_with_biconstraint()
+            lines.append(line)
+            prev_concat += line + '\n'
+            print(line)
+        else:
+            cands = []
+            for _ in range(4):
+                line = gen_with_biconstraint()
+                score = r.eval_between(lines[i - 1], line)
+                cands.append((line, score))
+            cands = sorted(cands, key=lambda x: x[1], reverse=True)
+            print(cands)
+            line = cands[0][0]
+            #line, _ = fix_line_ending(lines[i - 1], line)
+            lines.append(line)
+            prev_concat += line + '\n'
+            print(line)
+    else:
+        count = 14 - len(start_word)
+        pre_candidates = lg.generate_multi(prev_concat + start_word, count, C)
+        candidates = []
+        for cand in pre_candidates:
+            cand = cand[len(prev_concat):]
+            if len(cand) >= 15:
+                pass
+            cand = strutils.normalize(cand)
+            score = r.eval_between(prev_concat, cand)
+            candidates.append((cand, score))
+        candidates = sorted(candidates, key=lambda x: x[1], reverse=True)
+        print(candidates)
+        next = ['', -1]
+        for j in range(min(T, len(candidates))):
+            cand = candidates[i][0]
+            cand, score = fix_line_ending(prev_concat, cand)
+            if score > next[1]:
+                next = [cand, score]
+        line = next[0]
+        lines.append(line)
+        prev_concat += line + '\n'
+print(prev_concat)
+'''
+line1 = lg.generate(w1, 5)
+line1 = gap_filler.run(line1, ' ' + w2, 4)[0]
 line1 = strutils.normalize(line1)
 print(line1)
-#line2 = lg.generate(line1 + '\n' + w2, 11)
-line2 = gap_filler.run(line1 + '\n' + w2, '', 3)[0]
+line2 = gap_filler.run(line1 + ' ' + w2, '', 3)[0]
 line2 = line2[len(line1) + 1:]
-line2 = lg.generate(line1 + '\n' + line2, 3)
+line2 = lg.generate(line1 + ' ' + line2, 7)
 line2 = line2[len(line1) + 1:]
-print(line2)
-line2 = gap_filler.run(line1 + '\n' + line2, '\n' + w3, 4)[0]
-line2 = line2[len(line1) + 1:]
-line2 = strutils.normalize(line2)
 print(line2)
 line2 = fix_line_ending(line1, line2)
 print(line1)
 print(line2)
-line3 = lg.generate(line1 + '\n' + line2 + '\n' + w3, 11)
-line3 = line3[len(line1 + '\n' + line2 + '\n'):]
+line3 = gap_filler.run(line1 + ' ' + line2, '\n' + w3, 5)[0]
+line3 = line2[len(line1) + 1:]
+line3 = strutils.normalize(line2)
+print(line2)
+line3 = lg.generate(line1 + ' ' + line2 + '\n', 12, include_primer=False)
 print(line3)
 line3 = fix_line_ending(line2, line3)
 print(line1)
 print(line2)
 print(line3)
+#line4 = lg.generate(line1 + ' ' + line2 + '\n' + line3 + '\n' + w3)
+'''
+
+
+
 '''
 lines.append(lg.generate(' ', 14)[1:])
 for i in range(N - 1):

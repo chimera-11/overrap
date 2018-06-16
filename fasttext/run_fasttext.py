@@ -18,7 +18,7 @@ def sum_similar(f, t):
 
 def choosing_word(word, scope):
     rank = []
-    for x in model.most_similar(word, topn=100) :
+    for x in model.most_similar(word, topn=1000) :
         rank = sum_similar(rank, x)
     rank.sort(reverse = True)
     select = rank[0:scope]
@@ -26,7 +26,7 @@ def choosing_word(word, scope):
     
 def choosing_word_set(word, scope):
     rank = []
-    for x in model.most_similar(word, topn=100) :
+    for x in model.most_similar(word, topn=1000) :
         rank = sum_similar(rank, x)
 
     rank.sort(reverse = True)
@@ -35,9 +35,9 @@ def choosing_word_set(word, scope):
 
 def double_choosing_word(b, d, scope):
     rank = []
-    for x in model.most_similar(b, topn=100) :
+    for x in model.most_similar(b, topn=1000) :
         rank = sum_similar(rank, x)
-    for y in model.most_similar(d, topn=100) :
+    for y in model.most_similar(d, topn=1000) :
         rank = sum_similar(rank, y)
 
     rank.sort(reverse = True)
