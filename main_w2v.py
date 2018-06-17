@@ -108,7 +108,7 @@ w3 = sanitize_hangul(w3)
 #w3 = w3[0:3]
 
 #start_words = [w1, w2, '', w3, '']
-start_words = [w1, '', w2, '', '']
+start_words = [w2, '', w3, '', '']
 #start_words = [w1, w2, '']
 lines = []
 prev_concat = ''
