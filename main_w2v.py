@@ -94,11 +94,21 @@ def lines2str(lines):
 w1, w2 = w2v.sample_pair()
 w3 = w2v.sample_pair(w2)[1]
 print('w1=%s, w2=%s, w3=%s' % (w1, w2, w3))
+def sanitize_hangul(string):
+    result = ''
+    for c in string:
+        if hangul.is_hangul_char(c):
+            result += c
+    return result
+w1 = sanitize_hangul(w1)
+w2 = sanitize_hangul(w2)
+w3 = sanitize_hangul(w3)
 #w1 = w1[0:3]
 #w2 = w2[0:3]
 #w3 = w3[0:3]
 
-start_words = [w1, w2, '', w3, '']
+#start_words = [w1, w2, '', w3, '']
+start_words = [w1, '', w2, '', '']
 #start_words = [w1, w2, '']
 lines = []
 prev_concat = ''
@@ -139,18 +149,22 @@ for i in range(L):
             prev_concat += line + '\n'
             print(line)
     else:
-        count = 14 - len(start_word)
-        pre_candidates = lg.generate_multi(prev_concat + start_word, count, C)
+        count = 12 - len(start_word)
+        pre_candidates = lg.generate_multi(prev_concat + start_word, count - 4, C)
         candidates = []
         for cand in pre_candidates:
+            cand = cand[:len(prev_concat) + len(start_word) + count - 4]
+            cand = gap_filler.run(cand, '\n', 4, get_vindices(lines[i - 1]) if i > 0 else None)[0]
             cand = cand[len(prev_concat):]
             cand = strutils.normalize(cand)
-            if len(cand) >= 15:
+            if len(cand) >= 14:
                 pass
+            print(cand)
             score = r.eval_between(prev_concat, cand)
             candidates.append((cand, score))
         candidates = sorted(candidates, key=lambda x: x[1], reverse=True)
         print(candidates)
+        '''
         next = ['', -1]
         for j in range(min(T, len(candidates))):
             cand = candidates[i][0]
@@ -158,6 +172,8 @@ for i in range(L):
             if score > next[1]:
                 next = [cand, score]
         line = next[0]
+        '''
+        line = candidates[0][0]
         lines.append(line)
         prev_concat += line + '\n'
 print(prev_concat)

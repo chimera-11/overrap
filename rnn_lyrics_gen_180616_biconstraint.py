@@ -112,7 +112,7 @@ class RNNLyricsGen180616Biconstraint:
                         prob *= probs[cindex]
                         primer += c
                     return prob
-                def calc_candidates(prev_state, primer, depth=-1):
+                def calc_candidates(prev_state, primer, depth=-1, dfs_char_depth=-1):
                     decomposed_seq = hangul_decomp.process_data(primer)
                     # returns a list of (char, prob, state) tuple
                     result = []
@@ -120,13 +120,13 @@ class RNNLyricsGen180616Biconstraint:
                     window = [(0, len(hangul.choseongs)),
                         (len(hangul.choseongs), len(hangul.choseongs) + len(hangul.joongseongs)),
                         (len(hangul.choseongs) + len(hangul.joongseongs), len(hangul.choseongs) + len(hangul.joongseongs) + len(hangul.jongseongs))]
-                    def char_dfs(inner_state, decomposed_seq, char_depth, prob):
+                    def char_dfs(inner_state, decomposed_seq, char_depth, prob, dfs_char_depth):
                         if char_depth == 3:
                             c = hangul_comp.process_data(decomposed_seq[-3:])
                             result.append((c, pow(prob, 1/3), inner_state))
                             return
                         probs, state = predict_phoneme(decomposed_seq, inner_state)
-                        if depth == num_chars - 1 and char_depth == 1 and vindices is not None:
+                        if dfs_char_depth == num_chars - 1 and char_depth == 1 and vindices is not None:
                             probs_old = probs
                             probs = []
                             for cidx in vindices:
@@ -137,8 +137,8 @@ class RNNLyricsGen180616Biconstraint:
                         for j in range(min(3, len(probs))):
                             cidx, cprob = probs[j]
                             c = hangul.default_wordset[cidx]
-                            char_dfs(state, decomposed_seq + c, char_depth + 1, prob * cprob)
-                    char_dfs(prev_state, decomposed_seq, 0, 1.0)
+                            char_dfs(state, decomposed_seq + c, char_depth + 1, prob * cprob, dfs_char_depth)
+                    char_dfs(prev_state, decomposed_seq, 0, 1.0, dfs_char_depth)
                     # 2. space and newline
                     # note that 1) we don't allow them to appear in a row
                     #    and 2) we don't allow the last character to be space or newline
@@ -169,7 +169,7 @@ class RNNLyricsGen180616Biconstraint:
                             pass
                         return
                     # beam search (branching factor = 3)
-                    next_candidates = calc_candidates(prev_state, cur_str, depth)
+                    next_candidates = calc_candidates(prev_state, cur_str, depth, char_depth)
                     for (c, p, next_state) in next_candidates:
                         char_depth_new = char_depth if c in [' ', '\n'] else char_depth + 1
                         dfs(depth, char_depth_new, cur_str + c, prob * p, next_state)
