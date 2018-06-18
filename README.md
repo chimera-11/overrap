@@ -1,7 +1,8 @@
 # overrap
 overrap은 한국어 랩 가사 생성 AI입니다.
 
-LSTM RNN을 이용해 가사를 학습하여 생성하며, 생성된 가사 중에서 라임이 가장 잘 맞는 것을 고릅니다.
+LSTM RNN을 이용해 가사를 학습하여 생성하며, 음소 수준에서 작동합니다.
+생성된 가사 중에서 라임이 가장 잘 맞는 것을 고릅니다.
 생성되는 가사의 형태는 10-12글자 4줄이며, 말단 모음은 일치하는 계열이 맞도록 조정해 생성합니다.
 첫째 줄과 셋째 줄의 첫 단어는 word2vec을 이용해 유사한 단어를 뽑아 pivot으로써 배정합니다.
 
@@ -15,7 +16,7 @@ Ending Modulation이란 RNN의 확률 모델을 이용해 beam search를 수행�
 # overrap (English)
 overrap is an AI application that generates rap lyrics in Korean.
 
-For modeling the lyrics, we use LSTM RNN. 
+For modeling the lyrics, we use LSTM RNN. The model operates at phoneme level.
 Among the generated lyrics candidates, we select the one which rhymes best with the previous line.
 The lyrics will be a four-line one, with each line having 10-12 characters.
 We use word2vec to sample two words that are similar in meaning,
@@ -58,3 +59,15 @@ which makes the endings more natural.
 마지막날은 아니라고 말해
 
 너무 아파하지 말아야해
+
+# How to Run
+python rnn_lyrics_train_180514.py <corpus-folder> : trains the LSTM lyrics model using specified corpus
+
+python rnn_lyrics_gen_180514.py <corpus-folder> <primer-phrase> <char-count> : tests lyrics generation
+
+python main_w2v.py : generates the four-line lyrics described above
+
+python rd_eval_batch.py <corpus-folder> : evaluates rhyme density of specified corpus and writes the result into a csv file
+
+python crawl.py <start_index> <end_index> <genre> <folder_to_save> : crawls balad, dance, or hiphop from Melon (a popular k-pop portal) music chart.
+start_index is inclusive, where end_index is exclusive. Each index is zero-based, and corresponds to fifty songs. For example, start_index=0 and end_index=20 will crawl 1,000 songs from the chart.
