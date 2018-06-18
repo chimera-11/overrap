@@ -11,8 +11,8 @@ T = 4
 w2v = RapWord2Vec180514()
 lg = LineGen()
 r = RhymeDensityEval()
-#fixer = RNNLyricsGen180514Constraint('crawl_dance_180514')
-fixer = RNNLyricsGen180514Constraint('..\\crawl_dance')
+fixer = RNNLyricsGen180514Constraint('crawl_dance_180514')
+#fixer = RNNLyricsGen180514Constraint('..\\crawl_dance')
 
 compatible_classes = {
     '아': ['아', '와'],
